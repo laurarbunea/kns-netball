@@ -449,15 +449,15 @@ const COURT = {
   },
   centre: {
     zones: `<rect width="${W}" height="${L}" fill="url(#st-centre)"/><path d="${topCircle}" ${NOGO}/><path d="${bottomCircle}" ${NOGO}/>`,
-    motto: "Start in the middle. Run everywhere. Help everyone!",
-    tips: ["Catch it. Pass it on.", "Stay out of the hoop circles."],
+    motto: "Start in the middle. Don't let the piggy get it!",
+    tips: ["Catch it. Pass it on.", "Pass it towards Attack.", "Stay out of the hoop circles."],
     yes: "Everywhere else on the court.",
     no: "Inside either shooting circle."
   },
   defence: {
     zones: `<rect width="${W}" height="${T1}" ${NOGO}/><rect y="${T1}" width="${W}" height="${L - T1}" fill="url(#st-defence)"/>`,
     motto: "Be the piggy in the middle!",
-    tips: ["Stay close to the girl who shoots.", "She's shooting? Arms up high!", "Missed? Jump and catch it!", "Got the ball? Pass it to a centre."],
+    tips: ["Stay close to the girl who shoots.", "She's shooting? Arms up high!", "Missed? Jump and catch it!"],
     yes: "The middle third and the third we defend, including that circle.",
     no: "The third we shoot at."
   }
