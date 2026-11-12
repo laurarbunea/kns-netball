@@ -98,6 +98,31 @@ section.extra p { margin: 0; color: var(--muted); }
 .waiting small { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 2px; }
 .rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
 
+/* Two tabs: Schedule (opens first) and Game advice. */
+.tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; background: var(--line); padding: 4px; border-radius: 14px; }
+.tabs button { font: inherit; font-weight: 700; font-size: 15px; line-height: 1.2; padding: 10px 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(27,35,64,.12); }
+.tabs button:focus-visible { outline: 3px solid var(--hi); outline-offset: 2px; }
+.view { display: flex; flex-direction: column; gap: 22px; }
+
+/* Court: tap a position and stripes show where she can go; grey is out of bounds for her. */
+.court-tabs { justify-content: flex-start; }
+.court-tabs button[data-a="attack"][aria-pressed="true"] { background: var(--attack); border-color: var(--attack); }
+.court-tabs button[data-a="centre"][aria-pressed="true"] { background: var(--centre); border-color: var(--centre); }
+.court-tabs button[data-a="defence"][aria-pressed="true"] { background: var(--defence); border-color: var(--defence); }
+.court-wrap { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.court-box { width: min(230px, 100%); max-width: 100%; flex: none; margin: 0 auto; }
+.court-box svg { width: 100%; height: auto; display: block; }
+.court-wrap.long { flex-direction: column; align-items: stretch; }
+.court-wrap.long .court-box { width: 100%; max-width: 560px; }
+.court-wrap.long .court-key { flex: none; }
+.court-end { font-family: var(--body); font-size: 9px; font-weight: 700; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.court-key { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.court-key p { margin: 0; color: var(--ink); }
+.court-key p.motto { font-family: var(--display); font-weight: 600; font-size: 18px; line-height: 1.25; color: var(--ink); text-wrap: balance; }
+.court-key .k { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.court-key .sw { width: 22px; height: 16px; border-radius: 4px; flex: none; border: 1px solid var(--line); }
+
 /* Spinner: picks fairly from the girls still waiting, leaving out anyone marked away. */
 .spin { border: 1.5px dashed var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
 .spin h3 { margin: 0; font-family: var(--display); font-size: 17px; font-weight: 600; }
@@ -132,6 +157,13 @@ section.extra p { margin: 0; color: var(--muted); }
     <p>Fridays at 4pm, Karori Normal School</p>
   </header>
 
+  <div class="tabs" role="tablist" aria-label="Page sections">
+    <button type="button" role="tab" id="tab-schedule" aria-controls="view-schedule" aria-selected="true">Schedule</button>
+    <button type="button" role="tab" id="tab-pod" aria-controls="view-pod" aria-selected="false">Player of the day</button>
+    <button type="button" role="tab" id="tab-advice" aria-controls="view-advice" aria-selected="false">Game advice</button>
+  </div>
+
+  <div class="view" id="view-schedule" role="tabpanel" aria-labelledby="tab-schedule">
   <div class="picker">
     <h2>Tap your daughter's name</h2>
     <div class="names" id="names"></div>
@@ -144,6 +176,9 @@ section.extra p { margin: 0; color: var(--muted); }
     <div class="list" id="played"></div>
   </div>
 
+  </div>
+
+  <div class="view" id="view-pod" role="tabpanel" aria-labelledby="tab-pod" hidden>
   <section class="extra" id="player-of-the-day">
     <h2>Player of the day</h2>
     <p>Every girl gets it once before anyone gets it twice.</p>
@@ -168,6 +203,47 @@ section.extra p { margin: 0; color: var(--muted); }
 
     <div class="pod" id="pod"></div>
   </section>
+  </div>
+
+  <div class="view" id="view-advice" role="tabpanel" aria-labelledby="tab-advice" hidden>
+  <section class="extra" id="court">
+    <h2>Where can she go?</h2>
+    <p>Tap a position. Stripes show where she can go. Grey means not allowed.</p>
+    <div class="names court-tabs" id="court-tabs">
+      <button type="button" data-a="attack" aria-pressed="true">Attack</button>
+      <button type="button" data-a="centre" aria-pressed="false">Centre</button>
+      <button type="button" data-a="defence" aria-pressed="false">Defence</button>
+    </div>
+    <div class="court-wrap" id="court-wrap">
+      <div class="court-box">
+        <svg id="court-svg" viewBox="-10 -26 172.5 357" role="img" aria-labelledby="court-title">
+          <title id="court-title">Netball court</title>
+          <defs>
+            <pattern id="st-attack" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#fde6e1"/><rect width="6" height="12" fill="#e8553f"/></pattern>
+            <pattern id="st-centre" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#fdf1cf"/><rect width="6" height="12" fill="#e0a100"/></pattern>
+            <pattern id="st-defence" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#d8f2ee"/><rect width="6" height="12" fill="#1f9a8a"/></pattern>
+          </defs>
+          <text class="court-end" id="lbl-shoot" x="76.25" y="-10" text-anchor="middle">Goal we shoot at</text>
+          <g id="court-draw">
+          <g id="court-zones"></g>
+          <!-- court lines: 15.25 m x 30.5 m, thirds, goal circles (4.9 m), centre circle -->
+          <g fill="none" stroke="#1b2340" stroke-width="2">
+            <rect x="0" y="0" width="152.5" height="305"/>
+            <line x1="0" y1="101.67" x2="152.5" y2="101.67"/>
+            <line x1="0" y1="203.33" x2="152.5" y2="203.33"/>
+            <path d="M 27.25 0 A 49 49 0 0 0 125.25 0"/>
+            <path d="M 27.25 305 A 49 49 0 0 1 125.25 305"/>
+            <circle cx="76.25" cy="152.5" r="4.5"/>
+          </g>
+          <rect x="66.25" y="-5" width="20" height="5" fill="#1b2340"/>
+          <rect x="66.25" y="305" width="20" height="5" fill="#1b2340"/>
+          </g>
+          <text class="court-end" id="lbl-defend" x="76.25" y="325" text-anchor="middle">Goal we defend</text>
+        </svg>
+      </div>
+      <div class="court-key" id="court-key"></div>
+    </div>
+  </section>
 
   <section class="extra">
     <h2>How it works</h2>
@@ -177,6 +253,7 @@ section.extra p { margin: 0; color: var(--muted); }
       <li>If someone is away, the first girl sitting out plays instead.</li>
     </ul>
   </section>
+  </div>
 </div>
 
 <script>
@@ -303,6 +380,75 @@ document.getElementById("names").addEventListener("click", e => {
   render();
 });
 render();
+
+// --- Tabs --- (#pod opens Player of the day, #advice opens Game advice)
+const TABS = ["schedule", "pod", "advice"];
+function showTab(name) {
+  if (!TABS.includes(name)) name = "schedule";
+  TABS.forEach(t => {
+    document.getElementById("view-" + t).hidden = t !== name;
+    document.getElementById("tab-" + t).setAttribute("aria-selected", t === name);
+  });
+}
+TABS.forEach(t => document.getElementById("tab-" + t).addEventListener("click", () => {
+  showTab(t);
+  history.replaceState(null, "", t === "schedule" ? location.pathname + location.search : "#" + t);
+}));
+const fromHash = () => showTab(location.hash.slice(1) || "schedule");
+window.addEventListener("hashchange", fromHash);
+fromHash();
+
+// --- Court ---
+const W = 152.5, L = 305, T1 = L / 3, T2 = 2 * L / 3;
+const NOGO = 'fill="#e4e6ee"';
+const topCircle = 'M 27.25 0 A 49 49 0 0 0 125.25 0 Z', bottomCircle = 'M 27.25 305 A 49 49 0 0 1 125.25 305 Z';
+const COURT = {
+  attack: {
+    zones: `<rect width="${W}" height="${T2}" fill="url(#st-attack)"/><rect y="${T2}" width="${W}" height="${L - T2}" ${NOGO}/>`,
+    motto: "Get free. Shoot a hoop!",
+    yes: "The middle third and the third we shoot at, including the shooting circle.",
+    no: "The third we defend."
+  },
+  centre: {
+    zones: `<rect width="${W}" height="${L}" fill="url(#st-centre)"/><path d="${topCircle}" ${NOGO}/><path d="${bottomCircle}" ${NOGO}/>`,
+    motto: "Run everywhere. Help everyone!",
+    yes: "Everywhere else on the court.",
+    no: "Inside either shooting circle."
+  },
+  defence: {
+    zones: `<rect width="${W}" height="${T1}" ${NOGO}/><rect y="${T1}" width="${W}" height="${L - T1}" fill="url(#st-defence)"/>`,
+    motto: "Be the piggy in the middle. Catch it if they miss!",
+    yes: "The middle third and the third we defend, including that circle.",
+    no: "The third we shoot at."
+  }
+};
+const SWATCH = { attack: "#e8553f", centre: "#e0a100", defence: "#1f9a8a" };
+function showCourt(a) {
+  document.getElementById("court-zones").innerHTML = COURT[a].zones;
+  document.querySelectorAll("#court-tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.a === a));
+  document.getElementById("court-key").innerHTML = `
+    <p style="color:${SWATCH[a]};font-weight:800;font-size:17px">${a[0].toUpperCase() + a.slice(1)}</p>
+    <p class="motto">&ldquo;${COURT[a].motto}&rdquo;</p>
+    <div class="k"><span class="sw" style="background: repeating-linear-gradient(45deg, ${SWATCH[a]} 0 4px, #fff 4px 8px)"></span><span><b style="color:var(--ink)">Allowed to go</b><br>${COURT[a].yes}</span></div>
+    <div class="k"><span class="sw" style="background:#e4e6ee"></span><span><b style="color:var(--ink)">Not allowed to go</b><br>${COURT[a].no}</span></div>`;
+}
+document.getElementById("court-tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (b) showCourt(b.dataset.a);
+});
+showCourt("attack");
+
+// Long-ways: the goal we shoot at on the right, like standing on the sideline.
+function setOrient(o) {
+  const long = o === "long";
+  const svg = document.getElementById("court-svg"), shoot = document.getElementById("lbl-shoot"), defend = document.getElementById("lbl-defend");
+  document.getElementById("court-wrap").classList.toggle("long", long);
+  document.getElementById("court-draw").setAttribute("transform", long ? "translate(305 0) rotate(90)" : "");
+  svg.setAttribute("viewBox", long ? "-8 -6 321 188" : "-10 -26 172.5 357");
+  const put = (el, x, y, anchor, text) => { el.setAttribute("x", x); el.setAttribute("y", y); el.setAttribute("text-anchor", anchor); el.textContent = text; };
+  if (long) { put(shoot, 305, 172, "end", "Goal we shoot at \u2192"); put(defend, 0, 172, "start", "\u2190 Goal we defend"); }
+  else { put(shoot, 76.25, -10, "middle", "Goal we shoot at"); put(defend, 76.25, 325, "middle", "Goal we defend"); }
+}
+setOrient("long");
 
 // --- Spinner wheel ---
 // One slice per girl still waiting (leaving out anyone marked away). The winner is
