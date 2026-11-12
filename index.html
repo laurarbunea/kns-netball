@@ -176,6 +176,15 @@ section.extra p { margin: 0; color: var(--muted); }
     <div class="list" id="played"></div>
   </div>
 
+
+  <section class="extra">
+    <h2>How it works</h2>
+    <ul class="rules">
+      <li>Everyone plays the same amount.</li>
+      <li>Everyone plays attack, centre and defence.</li>
+      <li>If someone is away, the first girl sitting out plays instead.</li>
+    </ul>
+  </section>
   </div>
 
   <div class="view" id="view-pod" role="tabpanel" aria-labelledby="tab-pod" hidden>
@@ -223,7 +232,7 @@ section.extra p { margin: 0; color: var(--muted); }
             <pattern id="st-centre" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#fdf1cf"/><rect width="6" height="12" fill="#e0a100"/></pattern>
             <pattern id="st-defence" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#d8f2ee"/><rect width="6" height="12" fill="#1f9a8a"/></pattern>
           </defs>
-          <text class="court-end" id="lbl-shoot" x="76.25" y="-10" text-anchor="middle">Goal we shoot at</text>
+          <text class="court-end" id="lbl-shoot" x="76.25" y="-10" text-anchor="middle">We shoot here</text>
           <g id="court-draw">
           <g id="court-zones"></g>
           <!-- court lines: 15.25 m x 30.5 m, thirds, goal circles (4.9 m), centre circle -->
@@ -238,21 +247,13 @@ section.extra p { margin: 0; color: var(--muted); }
           <rect x="66.25" y="-5" width="20" height="5" fill="#1b2340"/>
           <rect x="66.25" y="305" width="20" height="5" fill="#1b2340"/>
           </g>
-          <text class="court-end" id="lbl-defend" x="76.25" y="325" text-anchor="middle">Goal we defend</text>
+          <text class="court-end" id="lbl-defend" x="76.25" y="325" text-anchor="middle">They shoot here</text>
         </svg>
       </div>
       <div class="court-key" id="court-key"></div>
     </div>
   </section>
 
-  <section class="extra">
-    <h2>How it works</h2>
-    <ul class="rules">
-      <li>Everyone plays the same amount.</li>
-      <li>Everyone plays attack, centre and defence.</li>
-      <li>If someone is away, the first girl sitting out plays instead.</li>
-    </ul>
-  </section>
   </div>
 </div>
 
@@ -411,7 +412,7 @@ const COURT = {
   },
   centre: {
     zones: `<rect width="${W}" height="${L}" fill="url(#st-centre)"/><path d="${topCircle}" ${NOGO}/><path d="${bottomCircle}" ${NOGO}/>`,
-    motto: "Run everywhere. Help everyone!",
+    motto: "Start in the middle. Run everywhere. Help everyone!",
     yes: "Everywhere else on the court.",
     no: "Inside either shooting circle."
   },
@@ -429,8 +430,8 @@ function showCourt(a) {
   document.getElementById("court-key").innerHTML = `
     <p style="color:${SWATCH[a]};font-weight:800;font-size:17px">${a[0].toUpperCase() + a.slice(1)}</p>
     <p class="motto">&ldquo;${COURT[a].motto}&rdquo;</p>
-    <div class="k"><span class="sw" style="background: repeating-linear-gradient(45deg, ${SWATCH[a]} 0 4px, #fff 4px 8px)"></span><span><b style="color:var(--ink)">Allowed to go</b><br>${COURT[a].yes}</span></div>
-    <div class="k"><span class="sw" style="background:#e4e6ee"></span><span><b style="color:var(--ink)">Not allowed to go</b><br>${COURT[a].no}</span></div>`;
+    <div class="k"><span class="sw" style="background: repeating-linear-gradient(45deg, ${SWATCH[a]} 0 4px, #fff 4px 8px)"></span><span><b style="color:var(--ink)">Allowed to go</b></span></div>
+    <div class="k"><span class="sw" style="background:#e4e6ee"></span><span><b style="color:var(--ink)">Not allowed to go</b></span></div>`;
 }
 document.getElementById("court-tabs").addEventListener("click", e => {
   const b = e.target.closest("button"); if (b) showCourt(b.dataset.a);
@@ -445,8 +446,8 @@ function setOrient(o) {
   document.getElementById("court-draw").setAttribute("transform", long ? "translate(305 0) rotate(90)" : "");
   svg.setAttribute("viewBox", long ? "-8 -6 321 188" : "-10 -26 172.5 357");
   const put = (el, x, y, anchor, text) => { el.setAttribute("x", x); el.setAttribute("y", y); el.setAttribute("text-anchor", anchor); el.textContent = text; };
-  if (long) { put(shoot, 305, 172, "end", "Goal we shoot at \u2192"); put(defend, 0, 172, "start", "\u2190 Goal we defend"); }
-  else { put(shoot, 76.25, -10, "middle", "Goal we shoot at"); put(defend, 76.25, 325, "middle", "Goal we defend"); }
+  if (long) { put(shoot, 305, 172, "end", "We shoot here \u2192"); put(defend, 0, 172, "start", "\u2190 They shoot here"); }
+  else { put(shoot, 76.25, -10, "middle", "We shoot here"); put(defend, 76.25, 325, "middle", "They shoot here"); }
 }
 setOrient("long");
 
