@@ -98,6 +98,25 @@ section.extra p { margin: 0; color: var(--muted); }
 .waiting small { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 2px; }
 .rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
 
+/* Spinner: picks fairly from the girls still waiting, leaving out anyone marked away. */
+.spin { border: 1.5px dashed var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
+.spin h3 { margin: 0; font-family: var(--display); font-size: 17px; font-weight: 600; }
+.spin .help { font-size: 14px; }
+.spin .names { justify-content: center; }
+.spin .names button.away { text-decoration: line-through; color: var(--muted); border-style: dashed; }
+.spin-name { font-family: var(--display); font-weight: 800; font-size: 36px; line-height: 1.1; min-height: 40px; color: var(--brand); }
+.wheel-box { position: relative; width: min(300px, 100%); aspect-ratio: 1; max-width: 100%; }
+.wheel-box svg { width: 100%; height: 100%; display: block; overflow: visible; }
+#wheel { transform-origin: 0 0; transition: transform 4.6s cubic-bezier(.12,.7,.18,1); }
+#wheel.reset { transition: none; }
+@media (prefers-reduced-motion: reduce) { #wheel { transition: none; } }
+.wheel-label { pointer-events: none; font-family: var(--display); font-weight: 800; fill: #fff; paint-order: stroke; stroke: rgba(0,0,0,.18); stroke-width: 2px; }
+.seg.win { filter: brightness(1.15); }
+.seg.dim { opacity: .45; }
+.spin-btn { font: inherit; font-weight: 700; font-size: 17px; padding: 10px 28px; border-radius: 999px; border: 0; background: var(--brand); color: var(--brand-ink); cursor: pointer; }
+.spin-btn:disabled { opacity: 0.5; cursor: default; }
+.spin-btn:focus-visible { outline: 3px solid var(--hi); outline-offset: 2px; }
+
 @media (max-width: 520px) {
   .halves { grid-template-columns: 1fr; }
   .half + .half { border-left: 0; border-top: 1px solid var(--line); }
@@ -125,10 +144,28 @@ section.extra p { margin: 0; color: var(--muted); }
     <div class="list" id="played"></div>
   </div>
 
-  <section class="extra">
+  <section class="extra" id="player-of-the-day">
     <h2>Player of the day</h2>
     <p>Every girl gets it once before anyone gets it twice.</p>
     <div class="waiting" id="waiting"></div>
+
+    <div class="spin">
+      <h3>Can't decide? Spin.</h3>
+      <p class="help">It only picks from the girls still waiting. Tap a name if she's away today.</p>
+      <div class="names" id="spin-pool"></div>
+      <div class="wheel-box">
+        <svg viewBox="-110 -118 220 228" role="img" aria-label="Player of the day wheel">
+          <g id="wheel"></g>
+          <circle r="14" fill="#fff" stroke="#1b2340" stroke-width="3"/>
+          <circle r="5" fill="#1b2340"/>
+          <!-- pointer at the top -->
+          <path d="M -11 -116 L 11 -116 L 0 -94 Z" fill="#1b2340" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="spin-name" id="spin-name" aria-live="polite"></div>
+      <button type="button" class="spin-btn" id="spin-btn">Spin</button>
+    </div>
+
     <div class="pod" id="pod"></div>
   </section>
 
@@ -208,6 +245,14 @@ function mySummary(plan) {
   return `${me}: ${parts.join(" · ")}`;
 }
 
+// Girls who haven't had Player of the day yet (or, once everyone has, the fewest times).
+function stillWaiting() {
+  const counts = Object.fromEntries(GIRLS.map(n => [n, 0]));
+  Object.values(POD).forEach(n => { if (n in counts) counts[n]++; });
+  const low = Math.min(...Object.values(counts));
+  return GIRLS.filter(n => counts[n] === low);
+}
+
 function render() {
   document.getElementById("names").innerHTML = GIRLS.map(n =>
     `<button type="button" id="girl-${n}" aria-pressed="${n === me}" data-n="${n}">${n}</button>`).join("");
@@ -241,11 +286,7 @@ function render() {
     </article>`;
   }
 
-  const counts = Object.fromEntries(GIRLS.map(n => [n, 0]));
-  Object.values(POD).forEach(n => { if (n in counts) counts[n]++; });
-  const low = Math.min(...Object.values(counts));
-  const due = GIRLS.filter(n => counts[n] === low);
-  document.getElementById("waiting").innerHTML = `<small>Still waiting for their turn</small>${due.join(", ")}`;
+  document.getElementById("waiting").innerHTML = `<small>Still waiting for their turn</small>${stillWaiting().join(", ")}`;
 
   const games = SCHEDULE.filter(g => g.type !== "note");
   document.getElementById("pod").innerHTML = games.map(g => {
@@ -262,6 +303,80 @@ document.getElementById("names").addEventListener("click", e => {
   render();
 });
 render();
+
+// --- Spinner wheel ---
+// One slice per girl still waiting (leaving out anyone marked away). The winner is
+// picked fairly first; the wheel then spins to land her slice under the pointer.
+const away = new Set();
+let spinning = false, rotation = 0, slices = [];
+const COLOURS = ["#e8553f","#e0a100","#1f9a8a","#3446c9","#d9488f","#7a4bc4","#2f8fd6","#f08a24"];
+const poolEl = document.getElementById("spin-pool");
+const nameEl = document.getElementById("spin-name");
+const btn = document.getElementById("spin-btn");
+const wheel = document.getElementById("wheel");
+const here = () => stillWaiting().filter(n => !away.has(n));
+const RADIUS = 100;
+
+function drawWheel() {
+  slices = here();
+  wheel.classList.add("reset"); rotation = 0; wheel.style.transform = "rotate(0deg)";
+  void wheel.getBoundingClientRect(); wheel.classList.remove("reset");
+  const n = slices.length;
+  if (!n) { wheel.innerHTML = `<circle r="${RADIUS}" fill="#eceef4"/><text class="wheel-label" text-anchor="middle" y="-40" font-size="13" style="fill:#646c88;stroke:none">Everyone's away</text>`; return; }
+  const a = 360 / n, rad = d => (d - 90) * Math.PI / 180;
+  const pt = d => `${(RADIUS * Math.cos(rad(d))).toFixed(2)} ${(RADIUS * Math.sin(rad(d))).toFixed(2)}`;
+  const size = n > 6 ? 13 : n > 3 ? 15 : 18;
+  wheel.innerHTML = slices.map((name, i) => {
+    const s = i * a, c = s + a / 2, fill = COLOURS[i % COLOURS.length];
+    const shape = n === 1
+      ? `<circle class="seg" data-n="${name}" r="${RADIUS}" fill="${fill}"/>`
+      : `<path class="seg" data-n="${name}" d="M 0 0 L ${pt(s)} A ${RADIUS} ${RADIUS} 0 ${a > 180 ? 1 : 0} 1 ${pt(s + a)} Z" fill="${fill}" stroke="#fff" stroke-width="2"/>`;
+    return shape + `<text class="wheel-label" font-size="${size}" text-anchor="middle" dominant-baseline="middle"
+      transform="rotate(${c}) translate(0 ${-RADIUS * 0.6}) rotate(${n === 1 ? 0 : -90})">${name}</text>`;
+  }).join("") + `<circle r="${RADIUS}" fill="none" stroke="#1b2340" stroke-width="4"/>`;
+}
+
+function renderPool() {
+  poolEl.innerHTML = stillWaiting().map(n =>
+    `<button type="button" data-n="${n}" class="${away.has(n) ? "away" : ""}" aria-label="${n}${away.has(n) ? ", away today" : ""}">${n}</button>`).join("");
+  btn.disabled = here().length === 0 || spinning;
+}
+poolEl.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || spinning) return;
+  away.has(b.dataset.n) ? away.delete(b.dataset.n) : away.add(b.dataset.n);
+  nameEl.textContent = "";
+  renderPool(); drawWheel();
+});
+
+function fairIndex(n) {
+  // Even chance for every girl.
+  try { const x = new Uint32Array(1); crypto.getRandomValues(x); return x[0] % n; } catch (e) { return Math.floor(Math.random() * n); }
+}
+function finish(winner) {
+  spinning = false;
+  wheel.querySelectorAll(".seg").forEach(s => s.classList.toggle(s.dataset.n === winner ? "win" : "dim", true));
+  nameEl.textContent = winner;
+  renderPool();
+}
+btn.addEventListener("click", () => {
+  if (spinning || !slices.length) return;
+  wheel.querySelectorAll(".seg").forEach(s => s.classList.remove("win", "dim"));
+  nameEl.textContent = "";
+  const n = slices.length, a = 360 / n, w = fairIndex(n), winner = slices[w];
+  // Land the middle-ish of her slice at the top, after at least 5 full turns.
+  const jitter = (fairIndex(1000) / 1000 - 0.5) * a * 0.6;
+  const landAt = (360 - (w * a + a / 2) + jitter + 360) % 360;
+  rotation = rotation - (rotation % 360) + 360 * 5 + landAt;
+  const still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  spinning = !still; renderPool();
+  wheel.style.transform = `rotate(${rotation}deg)`;
+  if (still) return finish(winner);
+  let done = false;
+  const end = () => { if (!done) { done = true; finish(winner); } };
+  wheel.addEventListener("transitionend", end, { once: true });
+  setTimeout(end, 5200); // in case the browser skips the transition event
+});
+renderPool(); drawWheel();
 </script>
 </body>
 </html>
