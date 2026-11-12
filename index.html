@@ -168,7 +168,7 @@ const R = {
       h(["Clara","Sienna"],["Ailish","Ella"],["Ria","Matina"],["Sophie","Ava"])]
 };
 const SCHEDULE = [
-  { type:"played", n:1, vs:"Hectics" },
+  { type:"played", n:1, date:"2026-11-06", vs:"Hectics", sat:"Ella and Matina sat out the 1st half" },
   { type:"game", n:2,  date:"2026-11-13", vs:"Ngaio Shooters",  court:2, plan:R[2] },
   { type:"game", n:3,  date:"2026-11-20", vs:"Rainbow Rockets", court:2, plan:R[3] },
   { type:"note", date:"2026-11-27", text:"Training on Court 1. No game." },
@@ -221,7 +221,10 @@ function render() {
 
   function card(g) {
     if (g.type === "note") return `<div class="note">${dateBox(g.date)}<div>${g.text}</div></div>`;
-    if (g.type === "played") return `<div class="game past"><div class="played">Game ${g.n} v ${g.vs}: played</div></div>`;
+    if (g.type === "played") return `<div class="game past"><div class="ghead">${dateBox(g.date)}
+        <div class="gmeta"><div class="num">Game ${g.n} · Played</div>
+          <h3>v ${g.vs}</h3><div class="where">${g.sat}</div></div>
+      </div></div>`;
     const past = parse(g.date) < today;
     const isNext = g === nextGame;
     const halves = g.plan.map((h, i) => `
